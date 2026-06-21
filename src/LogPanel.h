@@ -20,6 +20,7 @@ namespace TinyCitySim
 
         void Initialize(ID2D1DeviceContext* d2dContext, IDWriteFactory* writeFactory);
         void AddEntry(int col, int row, std::wstring_view tileName);
+        void Log(std::wstring_view message);
         void Draw();
 
         LogPanel(const LogPanel&) = delete;

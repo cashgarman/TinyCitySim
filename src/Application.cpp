@@ -43,6 +43,11 @@ namespace TinyCitySim
 
         LogPanel::Instance().Initialize(d3dContext_->D2DContext(), d3dContext_->WriteFactory());
 
+        if (!tileRenderer_->BuildAtlas(*tileGrid_, 42u))
+        {
+            // Failure message logged by TileRenderer.
+        }
+
         tileGrid_->SetClientSize(window_->ClientWidth(), window_->ClientHeight());
 
         window_->SetResizeCallback([this](int width, int height)

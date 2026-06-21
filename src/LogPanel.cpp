@@ -54,6 +54,16 @@ namespace TinyCitySim
         }
     }
 
+    void LogPanel::Log(std::wstring_view message)
+    {
+        logLines_.push_back(std::wstring(message));
+
+        while (static_cast<int>(logLines_.size()) > kMaxLines)
+        {
+            logLines_.pop_front();
+        }
+    }
+
     void LogPanel::Draw()
     {
         if (!d2dContext_ || !textFormat_ || !backgroundBrush_ || !textBrush_)
