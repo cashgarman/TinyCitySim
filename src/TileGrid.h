@@ -37,7 +37,12 @@ namespace TinyCitySim
 
         void SetClientSize(int clientWidth, int clientHeight) noexcept;
 
-        // Modern C++ (C++17): std::optional replaces sentinel (-1,-1) for miss.
+        // This member function declaration uses several modern C++ features:
+        // - [[nodiscard]]: This attribute (C++17) advises callers not to ignore the returned value; ignoring may cause warnings.
+        // - std::optional<TileCoord>: The return type can represent either a valid TileCoord or "no result" (nullopt); C++17 std::optional avoids the need for special sentinel values.
+        // - ScreenToTile(int screenX, int screenY): The function takes screen (pixel) coordinates and maps them to a tile coordinate in the grid.
+        // - const: This function does not modify any member variables of the TileGrid class.
+        // - noexcept: This function is guaranteed not to throw exceptions.
         [[nodiscard]] std::optional<TileCoord> ScreenToTile(int screenX, int screenY) const noexcept;
 
         [[nodiscard]] int Width() const noexcept { return width_; }
