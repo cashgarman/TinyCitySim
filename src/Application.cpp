@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include "GardenGenerator.h"
 #include "LogPanel.h"
 
 namespace TinyCitySim
@@ -17,6 +18,11 @@ namespace TinyCitySim
         window_ = std::make_unique<Window>();
         d3dContext_ = std::make_unique<D3D11Context>();
         tileGrid_ = std::make_unique<TileGrid>(kDefaultGridWidth, kDefaultGridHeight, kDefaultTileSize);
+
+        // Generation runs at init (data layer), not in the renderer — TileGrid owns tile content.
+        GardenGenerator generator{ 42u };
+        generator.Generate(*tileGrid_);
+
         tileRenderer_ = std::make_unique<TileRenderer>();
         inputHandler_ = std::make_unique<InputHandler>(*tileGrid_);
 

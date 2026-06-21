@@ -1,5 +1,7 @@
 #include "TileRenderer.h"
 
+#include "GardenTile.h"
+
 #include <d3dcompiler.h>
 #include <fstream>
 #include <vector>
@@ -12,7 +14,6 @@ namespace TinyCitySim
     namespace
     {
         // Modern C++ (C++11): constexpr color constants replace #define macros.
-        inline constexpr Math::Float4 kTileBaseColor{ 0.18f, 0.28f, 0.18f, 1.0f };
         inline constexpr Math::Float4 kTileHoverColor{ 0.35f, 0.55f, 0.35f, 1.0f };
         inline constexpr Math::Float4 kTileBorderColor{ 0.85f, 0.95f, 0.55f, 1.0f };
         inline constexpr float kBorderWidth = 2.0f;
@@ -249,7 +250,8 @@ namespace TinyCitySim
         {
             for (int col = 0; col < grid.Width(); ++col)
             {
-                DrawTileFill(grid, col, row, kTileBaseColor);
+                const GardenTile& tile = grid.At(col, row);
+                DrawTileFill(grid, col, row, ColorFor(tile.type));
             }
         }
 

@@ -13,6 +13,7 @@ set(SOURCES
     src/Window.cpp
     src/D3D11Context.cpp
     src/TileGrid.cpp
+    src/GardenGenerator.cpp
     src/TileRenderer.cpp
     src/LogPanel.cpp
     src/InputHandler.cpp

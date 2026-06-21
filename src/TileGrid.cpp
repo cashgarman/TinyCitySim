@@ -7,6 +7,37 @@ namespace TinyCitySim
         , height_(height)
         , tileSize_(tileSize)
     {
+        // Row-major layout: row 0 is the top row; each row occupies width_ consecutive slots.
+        tiles_.resize(static_cast<size_t>(width * height));
+    }
+
+    bool TileGrid::InBounds(int col, int row) const noexcept
+    {
+        return col >= 0 && col < width_ && row >= 0 && row < height_;
+    }
+
+    const GardenTile& TileGrid::At(int col, int row) const noexcept
+    {
+        static const GardenTile kOutOfBounds{};
+
+        if (!InBounds(col, row))
+        {
+            return kOutOfBounds;
+        }
+
+        const size_t index = static_cast<size_t>(row * width_ + col);
+        return tiles_[index];
+    }
+
+    void TileGrid::Set(int col, int row, GardenTileType type) noexcept
+    {
+        if (!InBounds(col, row))
+        {
+            return;
+        }
+
+        const size_t index = static_cast<size_t>(row * width_ + col);
+        tiles_[index].type = type;
     }
 
     void TileGrid::SetClientSize(int clientWidth, int clientHeight) noexcept

@@ -7,6 +7,7 @@
 #include <dwrite.h>
 #include <deque>
 #include <string>
+#include <string_view>
 #include <wrl/client.h>
 
 namespace TinyCitySim
@@ -18,7 +19,7 @@ namespace TinyCitySim
         static LogPanel& Instance();
 
         void Initialize(ID2D1DeviceContext* d2dContext, IDWriteFactory* writeFactory);
-        void AddEntry(int col, int row);
+        void AddEntry(int col, int row, std::wstring_view tileName);
         void Draw();
 
         LogPanel(const LogPanel&) = delete;

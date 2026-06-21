@@ -1,6 +1,10 @@
 #pragma once
 
+#include "GardenTile.h"
+
 #include <optional>
+#include <span>
+#include <vector>
 
 namespace TinyCitySim
 {
@@ -42,11 +46,24 @@ namespace TinyCitySim
         [[nodiscard]] int OriginX() const noexcept { return originX_; }
         [[nodiscard]] int OriginY() const noexcept { return originY_; }
 
+        // Modern C++ (C++20): std::span exposes contiguous tile storage without copying.
+        [[nodiscard]] std::span<const GardenTile> Tiles() const noexcept { return tiles_; }
+
+        // Modern C++ (C++11): noexcept accessors — bounds-checked read; cannot throw after construction.
+        [[nodiscard]] const GardenTile& At(int col, int row) const noexcept;
+
+        void Set(int col, int row, GardenTileType type) noexcept;
+
     private:
+        [[nodiscard]] bool InBounds(int col, int row) const noexcept;
+
         int width_;
         int height_;
         int tileSize_;
         int originX_ = 0;
         int originY_ = 0;
+
+        // Modern C++ (C++11): std::vector stores a flat row-major 2D grid — index = row * width + col.
+        std::vector<GardenTile> tiles_;
     };
 }

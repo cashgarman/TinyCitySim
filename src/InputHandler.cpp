@@ -1,5 +1,6 @@
 #include "InputHandler.h"
 
+#include "GardenTile.h"
 #include "LogPanel.h"
 
 namespace TinyCitySim
@@ -37,6 +38,6 @@ namespace TinyCitySim
         // Log the tile coordinates using the logging panel's AddEntry method.
         // LogPanel::Instance() gets the single log panel instance (singleton pattern).
         // AddEntry(col, row) records which column and row were clicked.
-        LogPanel::Instance().AddEntry(col, row);
+        LogPanel::Instance().AddEntry(col, row, NameFor(grid_.At(col, row).type));
     }
 }

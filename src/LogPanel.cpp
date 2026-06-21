@@ -38,16 +38,15 @@ namespace TinyCitySim
         d2dContext_->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f, 1.0f), &textBrush_);
 
         logLines_.push_back(L"Hover a tile to highlight it.");
-        logLines_.push_back(L"Left-click a tile to log coordinates.");
+        logLines_.push_back(L"Left-click a tile to log coordinates and type.");
 
         resourcesCreated_ = true;
     }
 
-    void LogPanel::AddEntry(int col, int row)
+    void LogPanel::AddEntry(int col, int row, std::wstring_view tileName)
     {
         // Modern C++ (C++20): std::format replaces swprintf / manual wstring concatenation.
-        // Common in new tooling code at studios still maintaining Win32 clients.
-        logLines_.push_back(L"Clicked tile (" + std::to_wstring(col) + L", " + std::to_wstring(row) + L")");
+        logLines_.push_back(std::format(L"Clicked ({}, {}) — {}", col, row, tileName));
 
         while (static_cast<int>(logLines_.size()) > kMaxLines)
         {
