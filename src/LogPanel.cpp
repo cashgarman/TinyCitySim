@@ -47,7 +47,7 @@ namespace TinyCitySim
     {
         // Modern C++ (C++20): std::format replaces swprintf / manual wstring concatenation.
         // Common in new tooling code at studios still maintaining Win32 clients.
-        logLines_.push_back(std::format(L"Clicked tile ({}, {})", col, row));
+        logLines_.push_back(L"Clicked tile (" + std::to_wstring(col) + L", " + std::to_wstring(row) + L")");
 
         while (static_cast<int>(logLines_.size()) > kMaxLines)
         {
