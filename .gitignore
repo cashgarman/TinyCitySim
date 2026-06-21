@@ -19,3 +19,6 @@ CMakeFiles/
 *.obj
 *.exe
 *.log
+
+# Cursor safe-commit quiz approval token (local, one-time; never commit)
+.cursor/safe-commit-approval.json
