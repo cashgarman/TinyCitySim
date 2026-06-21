@@ -29,6 +29,16 @@ namespace TinyCitySim
         return tiles_[index];
     }
 
+    std::optional<GardenTileType> TileGrid::TryAt(int col, int row) const noexcept
+    {
+        if (!InBounds(col, row))
+        {
+            return std::nullopt;
+        }
+
+        return At(col, row).type;
+    }
+
     void TileGrid::Set(int col, int row, GardenTileType type) noexcept
     {
         if (!InBounds(col, row))

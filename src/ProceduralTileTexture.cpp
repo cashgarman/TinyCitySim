@@ -145,25 +145,76 @@ namespace TinyCitySim
             }
         }
 
-        void GenerateFence(int size, std::span<std::uint8_t> rgbaOut, Prng& prng)
+        void GenerateFence(const TileGenContext& ctx, std::span<std::uint8_t> rgbaOut)
         {
+            const int size = ctx.size;
             const Rgba8 base = FromFloat4(ColorFor(GardenTileType::Fence));
             const Rgba8 dark = LerpColor(base, Rgba8{ 0, 0, 0, 255 }, 0.18f);
             const Rgba8 light = LerpColor(base, Rgba8{ 255, 255, 255, 255 }, 0.10f);
             const int plankWidth = std::max(3, size / 6);
+            const std::uint32_t structSeed = SeedForCell(GardenTileType::Fence, ctx.col, ctx.row, ctx.seed);
+
+            const bool neighborNorth = ctx.north == GardenTileType::Fence;
+            const bool neighborSouth = ctx.south == GardenTileType::Fence;
+            const bool neighborEast = ctx.east == GardenTileType::Fence;
+            const bool neighborWest = ctx.west == GardenTileType::Fence;
+
+            const bool verticalRun = neighborEast && neighborWest;
+            const bool horizontalRun = neighborNorth && neighborSouth;
+            const int postSize = std::max(4, size / 6);
 
             for (int y = 0; y < size; ++y)
             {
                 for (int x = 0; x < size; ++x)
                 {
-                    const int plankIndex = x / plankWidth;
-                    const bool seam = (x % plankWidth) == 0;
-                    const float grain = HashNoise(plankIndex, y, prng.Next());
+                    const int worldX = ctx.col * size + x;
+                    const int worldY = ctx.row * size + y;
 
-                    Rgba8 color = seam ? dark : LerpColor(dark, light, grain * 0.6f + 0.2f);
-                    if (y < 2 || y >= size - 2)
+                    Rgba8 color = dark;
+
+                    if (horizontalRun && !verticalRun)
+                    {
+                        const int plankIndex = worldY / plankWidth;
+                        const bool seam = (worldY % plankWidth) == 0;
+                        const float grain = HashNoise(plankIndex, worldX, structSeed);
+                        color = seam ? dark : LerpColor(dark, light, grain * 0.6f + 0.2f);
+                    }
+                    else
+                    {
+                        const int plankIndex = worldX / plankWidth;
+                        const bool seam = (worldX % plankWidth) == 0;
+                        const float grain = HashNoise(plankIndex, worldY, structSeed);
+                        color = seam ? dark : LerpColor(dark, light, grain * 0.6f + 0.2f);
+                    }
+
+                    if (y < 2 && !neighborNorth)
                     {
                         color = dark;
+                    }
+
+                    if (y >= size - 2 && !neighborSouth)
+                    {
+                        color = dark;
+                    }
+
+                    if (!neighborWest && x < 2)
+                    {
+                        color = dark;
+                    }
+
+                    if (!neighborEast && x >= size - 2)
+                    {
+                        color = dark;
+                    }
+
+                    const bool nwCorner = !neighborNorth && !neighborWest && x < postSize && y < postSize;
+                    const bool neCorner = !neighborNorth && !neighborEast && x >= size - postSize && y < postSize;
+                    const bool swCorner = !neighborSouth && !neighborWest && x < postSize && y >= size - postSize;
+                    const bool seCorner = !neighborSouth && !neighborEast && x >= size - postSize && y >= size - postSize;
+
+                    if (nwCorner || neCorner || swCorner || seCorner)
+                    {
+                        color = LerpColor(dark, Rgba8{ 0, 0, 0, 255 }, 0.25f);
                     }
 
                     WritePixel(rgbaOut, size, x, y, color);
@@ -332,25 +383,43 @@ namespace TinyCitySim
             }
         }
 
-        void GenerateShed(int size, std::span<std::uint8_t> rgbaOut, Prng& prng)
+        void GenerateShed(const TileGenContext& ctx, std::span<std::uint8_t> rgbaOut)
         {
+            const int size = ctx.size;
             const Rgba8 wall = FromFloat4(ColorFor(GardenTileType::Shed));
             const Rgba8 roof = LerpColor(wall, Rgba8{ 0, 0, 0, 255 }, 0.35f);
             const Rgba8 plankDark = LerpColor(wall, Rgba8{ 0, 0, 0, 255 }, 0.12f);
             const int roofHeight = std::max(4, size * 3 / 10);
+            const std::uint32_t structSeed = SeedForCell(GardenTileType::Shed, ctx.col, ctx.row, ctx.seed);
+
+            const bool neighborNorth = ctx.north == GardenTileType::Shed;
+            const bool neighborSouth = ctx.south == GardenTileType::Shed;
+            const bool neighborEast = ctx.east == GardenTileType::Shed;
+            const bool neighborWest = ctx.west == GardenTileType::Shed;
+
+            const bool isTopRow = !neighborNorth;
+            const bool isDoorCell = neighborEast && neighborSouth && !neighborWest && !neighborNorth;
 
             for (int y = 0; y < size; ++y)
             {
                 for (int x = 0; x < size; ++x)
                 {
-                    if (y < roofHeight)
+                    const int worldY = ctx.row * size + y;
+
+                    if (isTopRow && y < roofHeight)
                     {
-                        WritePixel(rgbaOut, size, x, y, roof);
+                        Rgba8 color = roof;
+                        if (y == 0)
+                        {
+                            color = LerpColor(roof, Rgba8{ 0, 0, 0, 255 }, 0.15f);
+                        }
+
+                        WritePixel(rgbaOut, size, x, y, color);
                         continue;
                     }
 
-                    const bool seam = (y % 4) == 0;
-                    const float grain = HashNoise(x, y, prng.Next());
+                    const bool seam = (worldY % 4) == 0;
+                    const float grain = HashNoise(ctx.col * size + x, worldY, structSeed);
                     Rgba8 color = LerpColor(wall, plankDark, grain * 0.25f);
 
                     if (seam)
@@ -358,7 +427,11 @@ namespace TinyCitySim
                         color = plankDark;
                     }
 
-                    if (x >= size / 2 - 2 && x <= size / 2 + 2 && y >= size - 10 && y <= size - 3)
+                    if (isDoorCell
+                        && x >= size / 2 - 1
+                        && x <= size - 3
+                        && y >= size - 10
+                        && y <= size - 3)
                     {
                         color = LerpColor(plankDark, Rgba8{ 0, 0, 0, 255 }, 0.35f);
                     }
@@ -398,15 +471,9 @@ namespace TinyCitySim
         }
     }
 
-    void ProceduralTileTexture::GenerateCell(
-        GardenTileType type,
-        int col,
-        int row,
-        std::uint32_t seed,
-        int size,
-        std::span<std::uint8_t> rgbaOut)
+    void ProceduralTileTexture::GenerateCell(const TileGenContext& ctx, std::span<std::uint8_t> rgbaOut)
     {
-        const size_t expectedBytes = static_cast<size_t>(size * size * 4);
+        const size_t expectedBytes = static_cast<size_t>(ctx.size * ctx.size * 4);
         if (rgbaOut.size() < expectedBytes)
         {
             return;
@@ -414,36 +481,36 @@ namespace TinyCitySim
 
         std::memset(rgbaOut.data(), 0, rgbaOut.size());
 
-        Prng prng(SeedForCell(type, col, row, seed));
+        Prng prng(SeedForCell(ctx.type, ctx.col, ctx.row, ctx.seed));
 
-        switch (type)
+        switch (ctx.type)
         {
         case GardenTileType::Lawn:
-            GenerateLawn(size, rgbaOut, prng);
+            GenerateLawn(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::Fence:
-            GenerateFence(size, rgbaOut, prng);
+            GenerateFence(ctx, rgbaOut);
             break;
         case GardenTileType::Path:
-            GeneratePath(size, rgbaOut, prng);
+            GeneratePath(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::FlowerBed:
-            GenerateFlowerBed(size, rgbaOut, prng);
+            GenerateFlowerBed(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::VegetablePatch:
-            GenerateVegetablePatch(size, rgbaOut, prng);
+            GenerateVegetablePatch(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::Tree:
-            GenerateTree(size, rgbaOut, prng);
+            GenerateTree(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::Pond:
-            GeneratePond(size, rgbaOut, prng);
+            GeneratePond(ctx.size, rgbaOut, prng);
             break;
         case GardenTileType::Shed:
-            GenerateShed(size, rgbaOut, prng);
+            GenerateShed(ctx, rgbaOut);
             break;
         case GardenTileType::Patio:
-            GeneratePatio(size, rgbaOut, prng);
+            GeneratePatio(ctx.size, rgbaOut, prng);
             break;
         }
     }

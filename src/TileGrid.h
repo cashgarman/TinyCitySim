@@ -51,6 +51,7 @@ namespace TinyCitySim
 
         // Modern C++ (C++11): noexcept accessors — bounds-checked read; cannot throw after construction.
         [[nodiscard]] const GardenTile& At(int col, int row) const noexcept;
+        [[nodiscard]] std::optional<GardenTileType> TryAt(int col, int row) const noexcept;
 
         void Set(int col, int row, GardenTileType type) noexcept;
 

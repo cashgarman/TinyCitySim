@@ -28,13 +28,31 @@ namespace TinyCitySim
             for (int col = 0; col < gridWidth_; ++col)
             {
                 const GardenTile& tile = grid.At(col, row);
-                ProceduralTileTexture::GenerateCell(
+
+                auto neighborType = [&grid](int c, int r) -> GardenTileType
+                {
+                    if (const std::optional<GardenTileType> neighbor = grid.TryAt(c, r))
+                    {
+                        return *neighbor;
+                    }
+
+                    return GardenTileType::Lawn;
+                };
+
+                const TileGenContext ctx
+                {
                     tile.type,
                     col,
                     row,
                     seed,
                     cellTexSize_,
-                    cellPixels);
+                    neighborType(col, row - 1),
+                    neighborType(col, row + 1),
+                    neighborType(col + 1, row),
+                    neighborType(col - 1, row),
+                };
+
+                ProceduralTileTexture::GenerateCell(ctx, cellPixels);
 
                 for (int y = 0; y < cellTexSize_; ++y)
                 {

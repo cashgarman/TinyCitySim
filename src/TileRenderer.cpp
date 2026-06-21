@@ -153,6 +153,7 @@ namespace TinyCitySim
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
 
         hr = device->CreateInputLayout(
@@ -212,13 +213,8 @@ namespace TinyCitySim
         context_->Unmap(projectionConstantBuffer_.Get(), 0);
     }
 
-    void TileRenderer::UpdateAtlasConstants(bool useSolidColor)
+    void TileRenderer::UpdateAtlasConstants(bool useSolidColor, float elapsedTime)
     {
-        if (!atlasReady_)
-        {
-            return;
-        }
-
         D3D11_MAPPED_SUBRESOURCE mappedResource{};
         if (FAILED(context_->Map(atlasConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
         {
@@ -226,16 +222,21 @@ namespace TinyCitySim
         }
 
         AtlasConstantBuffer atlasConstants{};
-        atlasConstants.atlasGridSize = {
-            static_cast<float>(atlas_.GridWidth()),
-            static_cast<float>(atlas_.GridHeight()),
-        };
-        atlasConstants.atlasInvGridSize = {
-            1.0f / static_cast<float>(atlas_.GridWidth()),
-            1.0f / static_cast<float>(atlas_.GridHeight()),
-        };
+        if (atlasReady_)
+        {
+            atlasConstants.atlasGridSize = {
+                static_cast<float>(atlas_.GridWidth()),
+                static_cast<float>(atlas_.GridHeight()),
+            };
+            atlasConstants.atlasInvGridSize = {
+                1.0f / static_cast<float>(atlas_.GridWidth()),
+                1.0f / static_cast<float>(atlas_.GridHeight()),
+            };
+            atlasConstants.cellTexSize = static_cast<float>(atlas_.CellTexSize());
+        }
+
         atlasConstants.useSolidColor = useSolidColor ? 1.0f : 0.0f;
-        atlasConstants.cellTexSize = static_cast<float>(atlas_.CellTexSize());
+        atlasConstants.elapsedTime = elapsedTime;
 
         std::memcpy(mappedResource.pData, &atlasConstants, sizeof(AtlasConstantBuffer));
         context_->Unmap(atlasConstantBuffer_.Get(), 0);
@@ -248,19 +249,18 @@ namespace TinyCitySim
         float height,
         const Math::Float2& tileCoord,
         const Math::Float4& color,
+        float tileType,
         bool useSolidColor)
     {
         const std::array<Vertex, 6> vertices =
         {
-            Vertex{ { x, y }, { 0.0f, 0.0f }, tileCoord, color },
-            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color },
-            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color },
-            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color },
-            Vertex{ { x + width, y + height }, { 1.0f, 1.0f }, tileCoord, color },
-            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color },
+            Vertex{ { x, y }, { 0.0f, 0.0f }, tileCoord, color, tileType },
+            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType },
+            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType },
+            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType },
+            Vertex{ { x + width, y + height }, { 1.0f, 1.0f }, tileCoord, color, tileType },
+            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType },
         };
-
-        UpdateAtlasConstants(useSolidColor || !atlasReady_);
 
         D3D11_MAPPED_SUBRESOURCE mappedResource{};
         if (FAILED(context_->Map(dynamicVertexBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
@@ -293,7 +293,13 @@ namespace TinyCitySim
         context_->Draw(static_cast<UINT>(vertices.size()), 0);
     }
 
-    void TileRenderer::DrawTileFill(const TileGrid& grid, int col, int row, const Math::Float4& color, bool useSolidColor)
+    void TileRenderer::DrawTileFill(
+        const TileGrid& grid,
+        int col,
+        int row,
+        const Math::Float4& color,
+        float tileType,
+        bool useSolidColor)
     {
         const float x = static_cast<float>(grid.OriginX() + col * grid.TileSize());
         const float y = static_cast<float>(grid.OriginY() + row * grid.TileSize());
@@ -303,7 +309,7 @@ namespace TinyCitySim
             static_cast<float>(row),
         };
 
-        DrawQuad(x, y, size, size, tileCoord, color, useSolidColor);
+        DrawQuad(x, y, size, size, tileCoord, color, tileType, useSolidColor);
     }
 
     void TileRenderer::DrawTileBorder(const TileGrid& grid, int col, int row, float borderWidth, const Math::Float4& color)
@@ -316,15 +322,16 @@ namespace TinyCitySim
             static_cast<float>(row),
         };
 
-        DrawQuad(x, y, size, borderWidth, tileCoord, color, true);
-        DrawQuad(x, y + size - borderWidth, size, borderWidth, tileCoord, color, true);
-        DrawQuad(x, y, borderWidth, size, tileCoord, color, true);
-        DrawQuad(x + size - borderWidth, y, borderWidth, size, tileCoord, color, true);
+        DrawQuad(x, y, size, borderWidth, tileCoord, color, 0.0f, true);
+        DrawQuad(x, y + size - borderWidth, size, borderWidth, tileCoord, color, 0.0f, true);
+        DrawQuad(x, y, borderWidth, size, tileCoord, color, 0.0f, true);
+        DrawQuad(x + size - borderWidth, y, borderWidth, size, tileCoord, color, 0.0f, true);
     }
 
-    void TileRenderer::Draw(const TileGrid& grid, const std::optional<TileCoord>& hoveredTile)
+    void TileRenderer::Draw(const TileGrid& grid, const std::optional<TileCoord>& hoveredTile, float elapsedTime)
     {
         UpdateProjection(clientWidth_, clientHeight_);
+        UpdateAtlasConstants(!atlasReady_, elapsedTime);
 
         for (int row = 0; row < grid.Height(); ++row)
         {
@@ -333,14 +340,17 @@ namespace TinyCitySim
                 const GardenTile& tile = grid.At(col, row);
                 const Math::Float4 fallbackColor = ColorFor(tile.type);
                 const bool useSolidColor = !atlasReady_;
-                DrawTileFill(grid, col, row, fallbackColor, useSolidColor);
+                const float tileType = static_cast<float>(tile.type);
+                DrawTileFill(grid, col, row, fallbackColor, tileType, useSolidColor);
             }
         }
 
         if (hoveredTile.has_value())
         {
+            UpdateAtlasConstants(true, elapsedTime);
+
             const auto [col, row] = *hoveredTile;
-            DrawTileFill(grid, col, row, kTileHoverColor, true);
+            DrawTileFill(grid, col, row, kTileHoverColor, 0.0f, true);
             DrawTileBorder(grid, col, row, kBorderWidth, kTileBorderColor);
         }
     }

@@ -24,6 +24,7 @@ namespace TinyCitySim
             Math::Float2 uv;
             Math::Float2 tileCoord;
             Math::Float4 color;
+            float tileType = 0.0f;
         };
 
         struct AtlasConstantBuffer
@@ -32,7 +33,8 @@ namespace TinyCitySim
             Math::Float2 atlasInvGridSize{};
             float useSolidColor = 0.0f;
             float cellTexSize = static_cast<float>(kProceduralTileTexSize);
-            Math::Float2 padding{};
+            float elapsedTime = 0.0f;
+            float padding = 0.0f;
         };
 
         TileRenderer() = default;
@@ -44,13 +46,13 @@ namespace TinyCitySim
         [[nodiscard]] bool Initialize(ID3D11Device* device, int clientWidth, int clientHeight);
         [[nodiscard]] bool BuildAtlas(const TileGrid& grid, std::uint32_t seed);
         void Resize(int clientWidth, int clientHeight);
-        void Draw(const TileGrid& grid, const std::optional<TileCoord>& hoveredTile);
+        void Draw(const TileGrid& grid, const std::optional<TileCoord>& hoveredTile, float elapsedTime);
 
     private:
         [[nodiscard]] bool LoadShaders(ID3D11Device* device);
         [[nodiscard]] bool CreateConstantBuffers(ID3D11Device* device);
         void UpdateProjection(int clientWidth, int clientHeight);
-        void UpdateAtlasConstants(bool useSolidColor);
+        void UpdateAtlasConstants(bool useSolidColor, float elapsedTime);
         void DrawQuad(
             float x,
             float y,
@@ -58,8 +60,15 @@ namespace TinyCitySim
             float height,
             const Math::Float2& tileCoord,
             const Math::Float4& color,
+            float tileType,
             bool useSolidColor);
-        void DrawTileFill(const TileGrid& grid, int col, int row, const Math::Float4& color, bool useSolidColor);
+        void DrawTileFill(
+            const TileGrid& grid,
+            int col,
+            int row,
+            const Math::Float4& color,
+            float tileType,
+            bool useSolidColor);
         void DrawTileBorder(const TileGrid& grid, int col, int row, float borderWidth, const Math::Float4& color);
 
         Microsoft::WRL::ComPtr<ID3D11Device> device_;

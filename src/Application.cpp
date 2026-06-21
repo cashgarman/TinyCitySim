@@ -77,6 +77,13 @@ namespace TinyCitySim
     {
         MSG message{};
 
+        LARGE_INTEGER frequency{};
+        LARGE_INTEGER frameTicks{};
+        QueryPerformanceFrequency(&frequency);
+        QueryPerformanceCounter(&frameTicks);
+        perfFrequency_ = frequency.QuadPart;
+        lastFrameTicks_ = frameTicks.QuadPart;
+
         while (running_)
         {
             while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
@@ -93,6 +100,11 @@ namespace TinyCitySim
 
             if (running_)
             {
+                QueryPerformanceCounter(&frameTicks);
+                const long long deltaTicks = frameTicks.QuadPart - lastFrameTicks_;
+                lastFrameTicks_ = frameTicks.QuadPart;
+                elapsedTime_ += static_cast<float>(deltaTicks) / static_cast<float>(perfFrequency_);
+
                 RenderFrame();
             }
         }
@@ -133,7 +145,7 @@ namespace TinyCitySim
     void Application::RenderFrame()
     {
         d3dContext_->BeginFrame(0.05f, 0.07f, 0.12f, 1.0f);
-        tileRenderer_->Draw(*tileGrid_, inputHandler_->HoveredTile());
+        tileRenderer_->Draw(*tileGrid_, inputHandler_->HoveredTile(), elapsedTime_);
         LogPanel::Instance().Draw();
         d3dContext_->EndFrame();
     }

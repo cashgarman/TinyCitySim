@@ -38,5 +38,8 @@ namespace TinyCitySim
         std::unique_ptr<InputHandler> inputHandler_;
 
         bool running_ = true;
+        float elapsedTime_ = 0.0f;
+        long long lastFrameTicks_ = 0;
+        long long perfFrequency_ = 0;
     };
 }
