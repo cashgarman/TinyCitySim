@@ -154,6 +154,8 @@ namespace TinyCitySim
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 3, DXGI_FORMAT_R32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 4, DXGI_FORMAT_R32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
 
         hr = device->CreateInputLayout(
@@ -250,16 +252,18 @@ namespace TinyCitySim
         const Math::Float2& tileCoord,
         const Math::Float4& color,
         float tileType,
+        float grassLevel,
+        float waterBoost,
         bool useSolidColor)
     {
         const std::array<Vertex, 6> vertices =
         {
-            Vertex{ { x, y }, { 0.0f, 0.0f }, tileCoord, color, tileType },
-            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType },
-            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType },
-            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType },
-            Vertex{ { x + width, y + height }, { 1.0f, 1.0f }, tileCoord, color, tileType },
-            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType },
+            Vertex{ { x, y }, { 0.0f, 0.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
+            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
+            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
+            Vertex{ { x + width, y }, { 1.0f, 0.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
+            Vertex{ { x + width, y + height }, { 1.0f, 1.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
+            Vertex{ { x, y + height }, { 0.0f, 1.0f }, tileCoord, color, tileType, grassLevel, waterBoost },
         };
 
         D3D11_MAPPED_SUBRESOURCE mappedResource{};
@@ -299,6 +303,8 @@ namespace TinyCitySim
         int row,
         const Math::Float4& color,
         float tileType,
+        float grassLevel,
+        float waterBoost,
         bool useSolidColor)
     {
         const float x = static_cast<float>(grid.OriginX() + col * grid.TileSize());
@@ -309,7 +315,7 @@ namespace TinyCitySim
             static_cast<float>(row),
         };
 
-        DrawQuad(x, y, size, size, tileCoord, color, tileType, useSolidColor);
+        DrawQuad(x, y, size, size, tileCoord, color, tileType, grassLevel, waterBoost, useSolidColor);
     }
 
     void TileRenderer::DrawTileBorder(const TileGrid& grid, int col, int row, float borderWidth, const Math::Float4& color)
@@ -322,10 +328,10 @@ namespace TinyCitySim
             static_cast<float>(row),
         };
 
-        DrawQuad(x, y, size, borderWidth, tileCoord, color, 0.0f, true);
-        DrawQuad(x, y + size - borderWidth, size, borderWidth, tileCoord, color, 0.0f, true);
-        DrawQuad(x, y, borderWidth, size, tileCoord, color, 0.0f, true);
-        DrawQuad(x + size - borderWidth, y, borderWidth, size, tileCoord, color, 0.0f, true);
+        DrawQuad(x, y, size, borderWidth, tileCoord, color, 0.0f, 1.0f, 0.0f, true);
+        DrawQuad(x, y + size - borderWidth, size, borderWidth, tileCoord, color, 0.0f, 1.0f, 0.0f, true);
+        DrawQuad(x, y, borderWidth, size, tileCoord, color, 0.0f, 1.0f, 0.0f, true);
+        DrawQuad(x + size - borderWidth, y, borderWidth, size, tileCoord, color, 0.0f, 1.0f, 0.0f, true);
     }
 
     void TileRenderer::Draw(const TileGrid& grid, const std::optional<TileCoord>& hoveredTile, float elapsedTime)
@@ -341,7 +347,9 @@ namespace TinyCitySim
                 const Math::Float4 fallbackColor = ColorFor(tile.type);
                 const bool useSolidColor = !atlasReady_;
                 const float tileType = static_cast<float>(tile.type);
-                DrawTileFill(grid, col, row, fallbackColor, tileType, useSolidColor);
+                const float grassLevel = tile.type == GardenTileType::Lawn ? tile.grassLevel : 1.0f;
+                const float waterBoost = tile.type == GardenTileType::Lawn ? tile.waterBoost : 0.0f;
+                DrawTileFill(grid, col, row, fallbackColor, tileType, grassLevel, waterBoost, useSolidColor);
             }
         }
 
@@ -350,7 +358,7 @@ namespace TinyCitySim
             UpdateAtlasConstants(true, elapsedTime);
 
             const auto [col, row] = *hoveredTile;
-            DrawTileFill(grid, col, row, kTileHoverColor, 0.0f, true);
+            DrawTileFill(grid, col, row, kTileHoverColor, 0.0f, 1.0f, 0.0f, true);
             DrawTileBorder(grid, col, row, kBorderWidth, kTileBorderColor);
         }
     }

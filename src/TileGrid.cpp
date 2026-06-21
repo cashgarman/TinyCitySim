@@ -29,6 +29,19 @@ namespace TinyCitySim
         return tiles_[index];
     }
 
+    GardenTile& TileGrid::MutableAt(int col, int row) noexcept
+    {
+        static GardenTile kOutOfBounds{};
+
+        if (!InBounds(col, row))
+        {
+            return kOutOfBounds;
+        }
+
+        const size_t index = static_cast<size_t>(row * width_ + col);
+        return tiles_[index];
+    }
+
     std::optional<GardenTileType> TileGrid::TryAt(int col, int row) const noexcept
     {
         if (!InBounds(col, row))
@@ -48,6 +61,12 @@ namespace TinyCitySim
 
         const size_t index = static_cast<size_t>(row * width_ + col);
         tiles_[index].type = type;
+
+        if (type == GardenTileType::Lawn)
+        {
+            tiles_[index].grassLevel = 1.0f;
+            tiles_[index].waterBoost = 0.0f;
+        }
     }
 
     void TileGrid::SetClientSize(int clientWidth, int clientHeight) noexcept

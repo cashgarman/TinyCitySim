@@ -26,6 +26,8 @@ namespace TinyCitySim
     struct GardenTile
     {
         GardenTileType type = GardenTileType::Lawn;
+        float grassLevel = 1.0f;
+        float waterBoost = 0.0f;
     };
 
     // Modern C++ (C++11): [[nodiscard]] warns callers who ignore the return value — useful

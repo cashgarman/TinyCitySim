@@ -19,6 +19,11 @@ set(SOURCES
     src/TileRenderer.cpp
     src/LogPanel.cpp
     src/InputHandler.cpp
+    src/GrassSimulation.cpp
+    src/Chicken.cpp
+    src/ProceduralChickenSprite.cpp
+    src/ChickenSpriteAtlas.cpp
+    src/ChickenRenderer.cpp
 )
 
 add_executable(TinyCitySim WIN32 ${SOURCES})

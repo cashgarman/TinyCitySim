@@ -4,6 +4,8 @@
     "c-cpp-flylint.clang.enable": false,
     "c-cpp-flylint.flawfinder.enable": false,
     "c-cpp-flylint.lizard.enable": false,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.defaultConfiguration": "Debug",
     "files.associations": {
         "optional": "cpp",
         "array": "cpp",

@@ -5,6 +5,9 @@
 #include "TileGrid.h"
 #include "TileRenderer.h"
 #include "InputHandler.h"
+#include "GrassSimulation.h"
+#include "Chicken.h"
+#include "ChickenRenderer.h"
 
 #include <memory>
 #include <optional>
@@ -28,13 +31,16 @@ namespace TinyCitySim
         void OnMouseMove(int x, int y) noexcept;
         void OnMouseClick(int x, int y);
         void OnClose() noexcept;
+        void UpdateSimulation(float dt);
         void RenderFrame();
 
-        // Modern C++ (C++14): std::make_unique for exception-safe ownership.
         std::unique_ptr<Window> window_;
         std::unique_ptr<D3D11Context> d3dContext_;
         std::unique_ptr<TileGrid> tileGrid_;
         std::unique_ptr<TileRenderer> tileRenderer_;
+        std::unique_ptr<GrassSimulation> grassSimulation_;
+        std::unique_ptr<ChickenSimulation> chickenSimulation_;
+        std::unique_ptr<ChickenRenderer> chickenRenderer_;
         std::unique_ptr<InputHandler> inputHandler_;
 
         bool running_ = true;

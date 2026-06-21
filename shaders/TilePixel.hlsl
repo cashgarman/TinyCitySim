@@ -8,6 +8,8 @@ struct PixelInput
     float2 tileCoord : TEXCOORD1;
     float4 color : COLOR;
     float tileType : TEXCOORD2;
+    float grassLevel : TEXCOORD3;
+    float waterBoost : TEXCOORD4;
 };
 
 cbuffer AtlasBuffer : register(b1)
@@ -86,8 +88,18 @@ float4 main(PixelInput input) : SV_TARGET
     }
     else if (abs(typeId - kTypeLawn) < 0.5f)
     {
-        const float breeze = sin(elapsedTime * 1.2 + worldPos.x * 10.0 + worldPos.y * 6.0) * 0.015;
+        const float grass = saturate(input.grassLevel);
+        const float3 dirtColor = float3(0.38, 0.28, 0.16);
+        color.rgb = lerp(dirtColor, color.rgb, grass);
+
+        const float breeze = sin(elapsedTime * 1.2 + worldPos.x * 10.0 + worldPos.y * 6.0) * 0.015 * grass;
         color.rgb += breeze;
+
+        if (input.waterBoost > 0.0f)
+        {
+            const float pulse = sin(elapsedTime * 4.0 + worldPos.x * 8.0) * 0.03 + 0.03;
+            color.rgb += float3(0.0, pulse, 0.0) * grass;
+        }
     }
 
     return color;

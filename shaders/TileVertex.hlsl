@@ -5,6 +5,8 @@ struct VertexInput
     float2 tileCoord : TEXCOORD1;
     float4 color : COLOR;
     float tileType : TEXCOORD2;
+    float grassLevel : TEXCOORD3;
+    float waterBoost : TEXCOORD4;
 };
 
 struct VertexOutput
@@ -14,6 +16,8 @@ struct VertexOutput
     float2 tileCoord : TEXCOORD1;
     float4 color : COLOR;
     float tileType : TEXCOORD2;
+    float grassLevel : TEXCOORD3;
+    float waterBoost : TEXCOORD4;
 };
 
 cbuffer TransformBuffer : register(b0)
@@ -29,5 +33,7 @@ VertexOutput main(VertexInput input)
     output.tileCoord = input.tileCoord;
     output.color = input.color;
     output.tileType = input.tileType;
+    output.grassLevel = input.grassLevel;
+    output.waterBoost = input.waterBoost;
     return output;
 }

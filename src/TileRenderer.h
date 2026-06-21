@@ -25,6 +25,8 @@ namespace TinyCitySim
             Math::Float2 tileCoord;
             Math::Float4 color;
             float tileType = 0.0f;
+            float grassLevel = 1.0f;
+            float waterBoost = 0.0f;
         };
 
         struct AtlasConstantBuffer
@@ -61,6 +63,8 @@ namespace TinyCitySim
             const Math::Float2& tileCoord,
             const Math::Float4& color,
             float tileType,
+            float grassLevel,
+            float waterBoost,
             bool useSolidColor);
         void DrawTileFill(
             const TileGrid& grid,
@@ -68,6 +72,8 @@ namespace TinyCitySim
             int row,
             const Math::Float4& color,
             float tileType,
+            float grassLevel,
+            float waterBoost,
             bool useSolidColor);
         void DrawTileBorder(const TileGrid& grid, int col, int row, float borderWidth, const Math::Float4& color);
 

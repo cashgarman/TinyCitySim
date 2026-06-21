@@ -9,22 +9,26 @@ namespace TinyCitySim
     {
         inline constexpr int kInitialWindowWidth = 960;
         inline constexpr int kInitialWindowHeight = 720;
+        inline constexpr int kChickenCount = 3;
+        inline constexpr std::uint32_t kGardenSeed = 42u;
         inline constexpr wchar_t kWindowTitle[] = L"TinyCitySim - DX11 Tile Grid";
     }
 
     bool Application::Initialize(HINSTANCE instance)
     {
-        // Modern C++ (C++14): std::make_unique for exception-safe heap ownership.
         window_ = std::make_unique<Window>();
         d3dContext_ = std::make_unique<D3D11Context>();
         tileGrid_ = std::make_unique<TileGrid>(kDefaultGridWidth, kDefaultGridHeight, kDefaultTileSize);
+        grassSimulation_ = std::make_unique<GrassSimulation>();
+        chickenSimulation_ = std::make_unique<ChickenSimulation>();
 
-        // Generation runs at init (data layer), not in the renderer — TileGrid owns tile content.
-        GardenGenerator generator{ 42u };
+        GardenGenerator generator{ kGardenSeed };
         generator.Generate(*tileGrid_);
+        chickenSimulation_->Spawn(*tileGrid_, kChickenCount, kGardenSeed);
 
         tileRenderer_ = std::make_unique<TileRenderer>();
-        inputHandler_ = std::make_unique<InputHandler>(*tileGrid_);
+        chickenRenderer_ = std::make_unique<ChickenRenderer>();
+        inputHandler_ = std::make_unique<InputHandler>(*tileGrid_, *grassSimulation_);
 
         if (!window_->Create(instance, kInitialWindowWidth, kInitialWindowHeight, kWindowTitle))
         {
@@ -41,11 +45,21 @@ namespace TinyCitySim
             return false;
         }
 
+        if (!chickenRenderer_->Initialize(d3dContext_->Device(), window_->ClientWidth(), window_->ClientHeight()))
+        {
+            return false;
+        }
+
         LogPanel::Instance().Initialize(d3dContext_->D2DContext(), d3dContext_->WriteFactory());
 
-        if (!tileRenderer_->BuildAtlas(*tileGrid_, 42u))
+        if (!tileRenderer_->BuildAtlas(*tileGrid_, kGardenSeed))
         {
             // Failure message logged by TileRenderer.
+        }
+
+        if (!chickenRenderer_->BuildAtlas(kGardenSeed))
+        {
+            LogPanel::Instance().Log(L"Failed to build chicken sprite atlas.");
         }
 
         tileGrid_->SetClientSize(window_->ClientWidth(), window_->ClientHeight());
@@ -103,8 +117,10 @@ namespace TinyCitySim
                 QueryPerformanceCounter(&frameTicks);
                 const long long deltaTicks = frameTicks.QuadPart - lastFrameTicks_;
                 lastFrameTicks_ = frameTicks.QuadPart;
-                elapsedTime_ += static_cast<float>(deltaTicks) / static_cast<float>(perfFrequency_);
+                const float dt = static_cast<float>(deltaTicks) / static_cast<float>(perfFrequency_);
+                elapsedTime_ += dt;
 
+                UpdateSimulation(dt);
                 RenderFrame();
             }
         }
@@ -124,6 +140,7 @@ namespace TinyCitySim
             return;
         }
         tileRenderer_->Resize(width, height);
+        chickenRenderer_->Resize(width, height);
         tileGrid_->SetClientSize(width, height);
     }
 
@@ -142,10 +159,17 @@ namespace TinyCitySim
         running_ = false;
     }
 
+    void Application::UpdateSimulation(float dt)
+    {
+        grassSimulation_->Update(*tileGrid_, dt);
+        chickenSimulation_->Update(*tileGrid_, dt);
+    }
+
     void Application::RenderFrame()
     {
         d3dContext_->BeginFrame(0.05f, 0.07f, 0.12f, 1.0f);
         tileRenderer_->Draw(*tileGrid_, inputHandler_->HoveredTile(), elapsedTime_);
+        chickenRenderer_->Draw(*chickenSimulation_, *tileGrid_, elapsedTime_);
         LogPanel::Instance().Draw();
         d3dContext_->EndFrame();
     }

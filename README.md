@@ -13,11 +13,20 @@ A **DirectX 11 + Win32** tile-grid boilerplate for studying the kind of stack us
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Debug
+.\build\Debug\TinyCitySim.exe
+```
+
+Release build:
+
+```powershell
 cmake --build build --config Release
 .\build\Release\TinyCitySim.exe
 ```
 
-Shaders are copied to the output directory automatically by CMake (`shaders/` next to the `.exe`).
+Shaders are copied to the output directory automatically by CMake (`shaders/` next to the `.exe`) for both Debug and Release builds.
+
+In Cursor/VS Code, use **Run and Debug** with the **Debug TinyCitySim** launch configuration (F5) to build and run the Debug configuration.
 
 ## Controls
 
